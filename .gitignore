@@ -1,0 +1,101 @@
+# ==========================================
+# AGILAB 軟硬體整合專案通用 .gitignore
+# ==========================================
+
+# 1. FPGA / IC 設計工具
+# Vivado 專用
+*.jou
+*.log
+*.pb
+*.str
+*.xpr.lock
+*.cache/
+*.hw/
+*.ip_user_files/
+*.sim/
+*.runs/
+*.gen/
+
+# Quartus 專用
+*.qsf.bak
+*.srf
+db/
+incremental_db/
+output_files/
+
+# 通用 IC 設計暫存檔
+*.bak
+*.tmp
+
+
+# 2. Python / 軟體相關
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# C extensions
+*.so
+
+# Distribution / packaging
+.Python
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+
+# 3. ROS 2 與測試暫存
+build/
+log/
+*.db3
+
+
+# 4. 資料與模型 (保留目錄結構，忽略內部資料)
+data/*
+!data/**/.gitkeep
+!data/.gitkeep
+
+
+# 5. Jupyter Notebook
+.ipynb_checkpoints
+
+
+# 6. 環境與虛擬環境
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+.conda/
+
+
+# 7. IDEs 與編輯器 (保留 AGILAB 共用設定與 Snippets)
+.idea/
+.vscode/*
+!.vscode/agilab_IC.code-snippets
+!.vscode/agilab.code-snippets
+!.vscode/settings.json
+*.swp
+*.swo
+
+
+# 8. 開發工具快取
+.ruff_cache/
+.pytest_cache/
+.mypy_cache/
+.tools/

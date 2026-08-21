@@ -1,0 +1,37 @@
+name: agilab_env
+channels:
+  - pytorch
+  - nvidia
+  - conda-forge
+  - defaults
+dependencies:
+  # Python version
+  - python=3.9
+  - pip
+  - ipykernel
+
+  # Core Scientific computation
+  - numpy~=2.0
+  - scipy~=1.11
+  - pandas~=2.1
+  - matplotlib~=3.8
+  
+  # PyTorch & CUDA
+  - pytorch=2.3.1
+  - torchvision=0.18.1
+  - torchaudio=2.3.1
+  - pytorch-cuda=12.1
+
+  # Development & Coding Style
+  - pre-commit=3.7.1
+  - ruff=0.4.10
+  - pytest=8.2.2
+  - pytest-cov=5.0.0
+  
+  # IC Design Tools (新增硬體組專用工具)
+  # 使用 conda-forge 安裝 verible，確保全實驗室版本一致
+  # - verible=0.0.3755 
+  
+  - pip:
+    # 這裡安裝您的核心套件 (這會根據 pyproject.toml 裡的 dependencies 自動安裝)
+    - -e .[dev]

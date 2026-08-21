@@ -1,0 +1,36 @@
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.5.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-added-large-files
+        args: ['--maxkb=50000']
+
+  # ==========================================
+  # 1. Python 開發環境工具 (Ruff)
+  # ==========================================
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.4.10
+    hooks:
+      - id: ruff
+        args: [--fix]
+      - id: ruff-format
+
+  # ==========================================
+  # 2. IC 設計 Verible 工具 (本機 v0.0-4084)
+  # ==========================================
+  - repo: local
+    hooks:
+      - id: verible-format
+        name: Verible Formatter (Auto-fix)
+        entry: python scripts/run_verible.py format
+        language: system
+        files: \.(v|sv)$
+
+      - id: verible-lint
+        name: Verible Linter (Safety Check)
+        entry: python scripts/run_verible.py lint
+        language: system
+        files: \.(v|sv)$
+        pass_filenames: true

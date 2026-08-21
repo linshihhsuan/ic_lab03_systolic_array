@@ -1,0 +1,58 @@
+{
+  "AGILAB SystemVerilog Header": {
+    "prefix": "agi-IC-header",
+    "scope": "verilog,systemverilog",
+    "body": [
+      "// verilog_lint: waive-start",
+      "//////////////////////////////////////////////////////////////////////////////////",
+      "// Company: ${1|AGILAB,NTNU|}",
+      "// Engineer: ${2|Master Student,Undergraduate Student,PhD Student,Professor|}",
+      "//",
+      "// Create Date: $CURRENT_YEAR/$CURRENT_MONTH/$CURRENT_DATE $CURRENT_HOUR:$CURRENT_MINUTE:$CURRENT_SECOND",
+      "// Design Type: ${3|RTL (Synthesizable Circuit),Testbench (Simulation Only)|}",
+      "// Design Name: ${4:Project_Name}",
+      "// Module Name: $TM_FILENAME_BASE",
+      "// Project Name:",
+      "// Target Devices:",
+      "// Tool Versions:",
+      "// Description: $5",
+      "// Coding Rules:",
+      "//   Type       : $3",
+      "//   SV Syntax  : ${3/^RTL.*/Avoid new SystemVerilog syntax; keep it synthesizable and compatible./}${3/^Testbench.*/Full SystemVerilog syntax allowed for simulation/}",
+      "//   Ports      : i_* = inputs, o_* = outputs (e.g. i_clk, i_rst_n, i_a, i_b, o_y)",
+      "//   Regs       : *_r = registers, *_next = combinational next-state signals",
+      "//   Reset      : active-low synchronous reset (i_rst_n), posedge i_clk only",
+      "//   FSM        : strict 3-block style; assign defaults in always_comb; no latches",
+      "//   Handshake  : *_vld / *_rdy naming",
+      "//   Systolic   : u_PE_R[r]_C[c], pe_data_east/south, *_ping / *_pong",
+      "//   Safety     : avoid bit-width mismatches",
+      "//",
+      "// Dependencies:",
+      "//",
+      "// Revision:",
+      "// Revision 0.01 - File Created",
+      "// Additional Comments:",
+      "//",
+      "//////////////////////////////////////////////////////////////////////////////////",
+      "// verilog_lint: waive-stop",
+      "$0"
+    ],
+    "description": "AGILAB Standard SystemVerilog Header with Linter Waiver"
+  },
+  "AGILAB Python Header": {
+    "prefix": "agi-header",
+    "scope": "python",
+    "body": [
+      "\"\"\"",
+      "Module: $TM_FILENAME_BASE",
+      "Stage: ${1|Library,Notebook,Script|}",
+      "Author: ${2|Master Student,Undergraduate Student,PhD Student,Professor|}",
+      "Date: $CURRENT_YEAR-$CURRENT_MONTH-$CURRENT_DATE",
+      "Description: ${3:ShortDescription}",
+      "\"\"\"",
+      "",
+      "$0"
+    ],
+    "description": "AGILAB 標準 Python 檔案標頭"
+  }
+}

@@ -1,0 +1,111 @@
+name: AGILAB Quality Check
+
+on: [push, pull_request]
+
+permissions:
+  contents: write
+
+jobs:
+  # 1. 硬體 RTL 檢查
+  verible-lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Verible
+        run: |
+          wget https://github.com/chipsalliance/verible/releases/download/v0.0-4084-gf3e4d98b/verible-v0.0-4084-gf3e4d98b-linux-static-x86_64.tar.gz
+          tar -xzf verible-*.tar.gz
+          sudo cp -r verible-*/bin/* /usr/local/bin/
+
+      - name: Run Verible Lint & Format
+        run: |
+          find src/rtl src/controller -type f \( -name "*.sv" -o -name "*.v" \) -print0 | xargs -0 -r verible-verilog-lint --rules_config=.veriblelintrc
+          find src/rtl src/controller -type f \( -name "*.sv" -o -name "*.v" \) -print0 | xargs -0 -r -n1 verible-verilog-format --inplace=false
+
+      - name: Run Custom Naming Convention Check
+        run: |
+          python3 - <<'PY'
+          import pathlib
+          import re
+          import sys
+
+          files = []
+          for root in ("src/rtl", "src/controller"):
+            base = pathlib.Path(root)
+            if not base.exists():
+              continue
+            files.extend(str(p) for p in base.rglob("*.sv"))
+            files.extend(str(p) for p in base.rglob("*.v"))
+
+          decl_re = re.compile(r"^\s*(input|output)\b([^;]*);")
+          token_re = re.compile(r"[A-Za-z_][A-Za-z0-9_]*")
+          bit_range_re = re.compile(r"\[[^\]]*\]")
+          block_comment_re = re.compile(r"/\*.*?\*/", re.S)
+
+          keywords = {
+            "logic", "wire", "reg", "bit", "var", "signed", "unsigned",
+            "input", "output", "inout", "integer", "byte", "shortint",
+            "int", "longint", "time", "realtime", "tri", "supply0", "supply1"
+          }
+
+          failures = []
+
+          for file_path in files:
+            text = pathlib.Path(file_path).read_text(encoding="utf-8", errors="ignore")
+            text = block_comment_re.sub("", text)
+
+            for line_num, line in enumerate(text.splitlines(), 1):
+              line = re.sub(r"//.*", "", line)
+              match = decl_re.match(line)
+              if not match:
+                continue
+
+              direction, declaration_tail = match.groups()
+              declaration_tail = bit_range_re.sub(" ", declaration_tail)
+              declaration_tail = declaration_tail.replace(",", " ")
+              declaration_tail = declaration_tail.replace("=", " ")
+
+              names = [
+                t for t in token_re.findall(declaration_tail)
+                if t not in keywords
+              ]
+
+              for name in names:
+                if direction == "input" and not name.startswith("i_"):
+                  failures.append(
+                    f"{file_path}:{line_num}: input port '{name}' must start with i_"
+                  )
+                if direction == "output" and not name.startswith("o_"):
+                  failures.append(
+                    f"{file_path}:{line_num}: output port '{name}' must start with o_"
+                  )
+                if "rst" in name and name != "i_rst_n":
+                  failures.append(
+                    f"{file_path}:{line_num}: reset-like port '{name}' should be i_rst_n"
+                  )
+
+          if failures:
+            print("Naming convention check failed:")
+            for item in failures:
+              print(item)
+            sys.exit(1)
+
+          print("Naming convention check passed.")
+          PY
+  # 2. 軟體 Python 檢查：依照專案結構掃描
+  python-lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Ruff
+        run: pip install ruff
+
+      - name: Run Ruff & Auto-fix
+        run: |
+          ruff check . --fix
+          ruff format .
+
+      - name: Auto-commit Python fixes
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "style: auto-fix python code by ruff [skip ci]"

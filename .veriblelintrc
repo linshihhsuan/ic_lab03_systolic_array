@@ -1,0 +1,5 @@
+no-tabs
+no-trailing-spaces
+explicit-parameter-storage-type
+line-length=length:100
+signal-name-style=style_regex:(i_[a-z_0-9]*|o_[a-z_0-9]*|[a-z_0-9]+(_r|_next)?)

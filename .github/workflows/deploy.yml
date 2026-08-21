@@ -1,0 +1,37 @@
+name: Publish IC Design Docs
+
+on:
+  push:
+    branches:
+      - main
+      - master
+
+permissions:
+  contents: write
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: 3.x
+
+      - name: Install dependencies
+        # 加入 pymdown-extensions 確保數學公式與程式碼高亮能正常運作
+        run: pip install mkdocs-material pymdown-extensions
+
+      - name: Sync READMEs to docs
+        run: |
+          mkdir -p docs
+          if [ -f README.md ]; then cp README.md docs/index.md; else : > docs/index.md; fi
+          if [ -f README_zh.md ]; then cp README_zh.md docs/README_zh.md; else : > docs/README_zh.md; fi
+      - name: Deploy to GitHub Pages
+        run: |
+          # git config，避免部署時出現權限問題
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          mkdocs gh-deploy --force

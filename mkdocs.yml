@@ -1,0 +1,70 @@
+site_name: AGILAB IC Design Documentation
+site_description: Hardware architecture and RTL design documentation for AGILAB.
+site_url: https://<your-username>.github.io/<repository-name>/
+
+theme:
+  name: material
+  logo: assets/images/logo/AGILAB.png
+  favicon: assets/images/logo/AGILAB_Logo.png
+  language: en
+  palette:
+    # Day mode
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: blue grey
+      accent: deep orange # 改為深橘色，識別 IC 組與 AI 軟體組 (通常軟體用藍色，硬體用橘/紅色)
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    # Night mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: blue grey
+      accent: deep orange
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - navigation.top
+    - search.suggest
+    - search.highlight
+    - content.code.copy
+    - content.code.annotate # IC 組常需要對 RTL 程式碼進行行間註解
+
+extra_css:
+  - assets/stylesheets/extra.css
+
+markdown_extensions:
+  - admonition
+  - attr_list
+  - md_in_html
+  - tables
+  - pymdownx.details
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+  - pymdownx.highlight:
+      anchor_linenums: true
+      pygments_lang_class: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.tabbed:
+      alternate_style: true
+  - pymdownx.emoji:
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
+  - pymdownx.magiclink
+  - pymdownx.tasklist:
+      custom_checkbox: true
+  - pymdownx.arithmatex: # IC 組必備：支援 LaTeX 數學式 (用於時序限制/數位訊號處理)
+      generic: true
+
+# 設定數學公式引擎
+extra_javascript:
+  - javascripts/mathjax.js
+  - https://polyfill.io/v3/polyfill.min.js?features=es6
+  - https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js
