@@ -33,9 +33,9 @@ MAX_K = 108
 MAX_N = 64
 
 DEFAULT_CASES = (
-    ("case_small",     4,  5,  3, 0x1301),
-    ("case_full32",   32, 32, 32, 0x1302),
-    ("case_multitile",35, 37, 34, 0x1303),
+    ("case_small", 4, 5, 3, 0x1301),
+    ("case_full32", 32, 32, 32, 0x1302),
+    ("case_multitile", 35, 37, 34, 0x1303),
 )
 
 
@@ -96,8 +96,7 @@ def generate_matrix(
     value_max: int,
 ) -> list[list[int]]:
     return [
-        [rng.randint(value_min, value_max) for _ in range(cols)]
-        for _ in range(rows)
+        [rng.randint(value_min, value_max) for _ in range(cols)] for _ in range(rows)
     ]
 
 
@@ -237,9 +236,7 @@ def main() -> None:
     all_custom = all(v is not None for v in custom_dims)
 
     if any_custom and not all_custom:
-        raise SystemExit(
-            "For a custom case, --m, --k and --n must all be provided."
-        )
+        raise SystemExit("For a custom case, --m, --k and --n must all be provided.")
 
     if all_custom:
         generate_case(
