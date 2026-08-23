@@ -78,8 +78,7 @@ module systolic_top #(
 
     input logic [S_MAX-1:0] i_b_wren,
 
-    input logic signed [DATA_WIDTH-1:0]
-        i_b_wdata [S_MAX],
+    input logic signed [DATA_WIDTH-1:0] i_b_wdata [S_MAX],
 
     output logic [S_MAX-1:0] o_b_full,
 
