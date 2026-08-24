@@ -24,16 +24,16 @@ GOLDEN_FILE = OUTPUT_DIR / "sync_fifo_golden.hex"
 #   5. prove read while empty is rejected
 test_vectors = [
     # wren rden input_data
-    (1, 0, 0x00000011),   # write 0x11
-    (1, 0, 0x00000022),   # write 0x22
-    (1, 0, 0x00000033),   # write 0x33
-    (0, 1, 0x00000000),   # read -> 0x11
-    (1, 1, 0x00000044),   # read 0x22 + write 0x44
-    (0, 1, 0x00000000),   # read -> 0x33
-    (0, 1, 0x00000000),   # read -> 0x44
-    (0, 1, 0x00000000),   # FIFO empty -> read rejected
-    (1, 0, 0x000000AA),   # write 0xAA
-    (0, 1, 0x00000000),   # read -> 0xAA
+    (1, 0, 0x00000011),  # write 0x11
+    (1, 0, 0x00000022),  # write 0x22
+    (1, 0, 0x00000033),  # write 0x33
+    (0, 1, 0x00000000),  # read -> 0x11
+    (1, 1, 0x00000044),  # read 0x22 + write 0x44
+    (0, 1, 0x00000000),  # read -> 0x33
+    (0, 1, 0x00000000),  # read -> 0x44
+    (0, 1, 0x00000000),  # FIFO empty -> read rejected
+    (1, 0, 0x000000AA),  # write 0xAA
+    (0, 1, 0x00000000),  # read -> 0xAA
 ]
 
 
@@ -43,10 +43,9 @@ golden_vectors = []
 last_output_data = 0
 
 for cycle, (wren, rden, input_data) in enumerate(test_vectors):
-
     # Status BEFORE clock edge
-    full_before = (len(fifo) == DEPTH)
-    empty_before = (len(fifo) == 0)
+    full_before = len(fifo) == DEPTH
+    empty_before = len(fifo) == 0
 
     write_accept = bool(wren and not full_before)
     read_accept = bool(rden and not empty_before)
@@ -99,14 +98,8 @@ for cycle, (wren, rden, input_data) in enumerate(test_vectors):
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
 with INPUT_FILE.open("w") as f:
-
     for wren, rden, data in test_vectors:
-
-        value = (
-            ((wren & 0x1) << 33)
-            | ((rden & 0x1) << 32)
-            | (data & 0xFFFFFFFF)
-        )
+        value = ((wren & 0x1) << 33) | ((rden & 0x1) << 32) | (data & 0xFFFFFFFF)
 
         # 34 bits -> 9 hex digits
         f.write(f"{value:09X}\n")
@@ -122,9 +115,7 @@ with INPUT_FILE.open("w") as f:
 # [0]      o_full
 
 with GOLDEN_FILE.open("w") as f:
-
     for data_vld, data, count, empty, full in golden_vectors:
-
         value = (
             ((data_vld & 0x1) << 38)
             | ((data & 0xFFFFFFFF) << 6)
