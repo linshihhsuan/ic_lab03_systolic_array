@@ -40,9 +40,7 @@ module tile_controller #(
     input  logic i_clk,
     input  logic i_rst_n,
 
-    // ------------------------------------------------------------
     // Configuration
-    // ------------------------------------------------------------
     input  logic i_start,
 
     input  logic [$clog2(MAX_M+1)-1:0] i_m_size,
@@ -52,26 +50,18 @@ module tile_controller #(
     // From size_selector.sv
     input  logic [$clog2(S_MAX+1)-1:0] i_s_active,
 
-    // ------------------------------------------------------------
     // Compute handshake
-    // ------------------------------------------------------------
     input  logic i_compute_done,
 
-    // ------------------------------------------------------------
     // Result drain handshake
-    // ------------------------------------------------------------
     input  logic i_drain_done,
 
-    // ------------------------------------------------------------
     // Control outputs
-    // ------------------------------------------------------------
     output logic o_acc_clear,
     output logic o_compute_start,
     output logic o_drain_start,
 
-    // ------------------------------------------------------------
     // Current tile information
-    // ------------------------------------------------------------
     output logic [$clog2(MAX_M+1)-1:0] o_m_base,
     output logic [$clog2(MAX_N+1)-1:0] o_n_base,
 
@@ -81,25 +71,19 @@ module tile_controller #(
     // Full K dimension
     output logic [$clog2(MAX_K+1)-1:0] o_k_size,
 
-    // ------------------------------------------------------------
     // Status
-    // ------------------------------------------------------------
     output logic o_busy,
     output logic o_done
 );
 
-    // ============================================================
     // Width definitions
-    // ============================================================
 
     localparam integer MW = $clog2(MAX_M + 1);
     localparam integer KW = $clog2(MAX_K + 1);
     localparam integer NW = $clog2(MAX_N + 1);
     localparam integer SW = $clog2(S_MAX + 1);
 
-    // ============================================================
     // FSM definition
-    // ============================================================
 
     typedef enum logic [2:0] {
         ST_IDLE,
@@ -115,18 +99,14 @@ module tile_controller #(
     state_t state_r;
     state_t state_n;
 
-    // ============================================================
     // Configuration registers
-    // ============================================================
 
     logic [MW-1:0] m_size_r;
     logic [KW-1:0] k_size_r;
     logic [NW-1:0] n_size_r;
     logic [SW-1:0] s_active_r;
 
-    // ============================================================
     // Tile registers
-    // ============================================================
 
     logic [MW-1:0] m_base_r;
     logic [NW-1:0] n_base_r;
@@ -134,9 +114,7 @@ module tile_controller #(
     logic [SW-1:0] active_rows_r;
     logic [SW-1:0] active_cols_r;
 
-    // ============================================================
     // Tile boundary detection
-    // ============================================================
 
     logic last_m_tile;
     logic last_n_tile;
@@ -159,9 +137,7 @@ module tile_controller #(
 
     end
 
-    // ============================================================
     // FSM next-state logic
-    // ============================================================
 
     always_comb begin
 
@@ -169,51 +145,38 @@ module tile_controller #(
 
         case (state_r)
 
-            // ----------------------------------------------------
             ST_IDLE: begin
                 if (i_start)
                     state_n = ST_PREP_TILE;
             end
 
-            // ----------------------------------------------------
             // Calculate active_rows / active_cols
-            // ----------------------------------------------------
             ST_PREP_TILE: begin
                 state_n = ST_CLEAR_ACC;
             end
 
-            // ----------------------------------------------------
             // Clear all PE accumulators for this C tile
-            // ----------------------------------------------------
             ST_CLEAR_ACC: begin
                 state_n = ST_START_COMPUTE;
             end
 
-            // ----------------------------------------------------
             // One-cycle compute start pulse
-            // ----------------------------------------------------
             ST_START_COMPUTE: begin
                 state_n = ST_WAIT_COMPUTE;
             end
 
-            // ----------------------------------------------------
             // Wait until complete K computation finishes
-            // ----------------------------------------------------
             ST_WAIT_COMPUTE: begin
                 if (i_compute_done)
                     state_n = ST_START_DRAIN;
             end
 
-            // ----------------------------------------------------
             // Start draining PE results
-            // ----------------------------------------------------
             ST_START_DRAIN: begin
                 state_n = ST_WAIT_DRAIN;
             end
 
-            // ----------------------------------------------------
             // Wait until complete C tile is drained
-            // ----------------------------------------------------
             ST_WAIT_DRAIN: begin
 
                 if (i_drain_done) begin
@@ -227,12 +190,10 @@ module tile_controller #(
 
             end
 
-            // ----------------------------------------------------
             ST_DONE: begin
                 state_n = ST_IDLE;
             end
 
-            // ----------------------------------------------------
             default: begin
                 state_n = ST_IDLE;
             end
@@ -240,9 +201,7 @@ module tile_controller #(
         endcase
     end
 
-    // ============================================================
     // Sequential logic
-    // ============================================================
 
     always_ff @(posedge i_clk) begin
 
@@ -266,9 +225,7 @@ module tile_controller #(
 
             state_r <= state_n;
 
-            // ----------------------------------------------------
             // Capture a new GEMM configuration
-            // ----------------------------------------------------
             if ((state_r == ST_IDLE) && i_start) begin
 
                 m_size_r   <= i_m_size;
@@ -281,9 +238,7 @@ module tile_controller #(
 
             end
 
-            // ----------------------------------------------------
             // Calculate actual dimensions of current edge tile
-            // ----------------------------------------------------
             if (state_r == ST_PREP_TILE) begin
 
                 // active_rows = min(S_active, M - m_base)
@@ -307,12 +262,10 @@ module tile_controller #(
 
             end
 
-            // ----------------------------------------------------
             // Advance tile after drain is completed
             //
             // N dimension = inner loop
             // M dimension = outer loop
-            // ----------------------------------------------------
             if ((state_r == ST_WAIT_DRAIN) &&
                 i_drain_done &&
                 !(last_m_tile && last_n_tile)) begin
@@ -340,9 +293,7 @@ module tile_controller #(
         end
     end
 
-    // ============================================================
     // Control outputs
-    // ============================================================
 
     always_comb begin
 
@@ -385,9 +336,7 @@ module tile_controller #(
         endcase
     end
 
-    // ============================================================
     // Metadata outputs
-    // ============================================================
 
     assign o_m_base      = m_base_r;
     assign o_n_base      = n_base_r;
