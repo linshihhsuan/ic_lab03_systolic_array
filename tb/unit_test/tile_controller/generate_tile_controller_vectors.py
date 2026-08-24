@@ -1,4 +1,3 @@
-
 # File Name:
 #   generate_tile_controller_vectors.py
 #
@@ -18,8 +17,8 @@ GOLDEN_FILE = "tile_controller_golden.hex"
 
 # tile_controller Reference Model
 
-class TileControllerModel:
 
+class TileControllerModel:
     ST_IDLE = 0
     ST_PREP_TILE = 1
     ST_CLEAR_ACC = 2
@@ -53,32 +52,18 @@ class TileControllerModel:
         if self.s_active == 0:
             return True
 
-        return (
-            (self.m_size - self.m_base)
-            <= self.s_active
-        )
+        return (self.m_size - self.m_base) <= self.s_active
 
     def last_n_tile(self):
 
         if self.s_active == 0:
             return True
 
-        return (
-            (self.n_size - self.n_base)
-            <= self.s_active
-        )
+        return (self.n_size - self.n_base) <= self.s_active
 
     # One Clock Cycle
     def step(
-        self,
-        rst_n,
-        start,
-        m_size,
-        k_size,
-        n_size,
-        s_active,
-        compute_done,
-        drain_done
+        self, rst_n, start, m_size, k_size, n_size, s_active, compute_done, drain_done
     ):
 
         # Save old state because RTL nonblocking assignment behavior
@@ -87,60 +72,45 @@ class TileControllerModel:
         old_last_m_tile = self.last_m_tile()
         old_last_n_tile = self.last_n_tile()
 
-
         # FSM Next-State Logic
         next_state = old_state
 
         if old_state == self.ST_IDLE:
-
             if start:
                 next_state = self.ST_PREP_TILE
 
         elif old_state == self.ST_PREP_TILE:
-
             next_state = self.ST_CLEAR_ACC
 
         elif old_state == self.ST_CLEAR_ACC:
-
             next_state = self.ST_START_COMPUTE
 
         elif old_state == self.ST_START_COMPUTE:
-
             next_state = self.ST_WAIT_COMPUTE
 
         elif old_state == self.ST_WAIT_COMPUTE:
-
             if compute_done:
                 next_state = self.ST_START_DRAIN
 
         elif old_state == self.ST_START_DRAIN:
-
             next_state = self.ST_WAIT_DRAIN
 
         elif old_state == self.ST_WAIT_DRAIN:
-
             if drain_done:
-
-                if (
-                    old_last_m_tile
-                    and old_last_n_tile
-                ):
+                if old_last_m_tile and old_last_n_tile:
                     next_state = self.ST_DONE
 
                 else:
                     next_state = self.ST_PREP_TILE
 
         elif old_state == self.ST_DONE:
-
             next_state = self.ST_IDLE
 
         else:
-
             next_state = self.ST_IDLE
 
         # Sequential Logic
         if not rst_n:
-
             self.state = self.ST_IDLE
 
             self.m_size = 0
@@ -155,14 +125,9 @@ class TileControllerModel:
             self.active_cols = 0
 
         else:
-
             # Capture GEMM configuration
 
-            if (
-                old_state == self.ST_IDLE
-                and start
-            ):
-
+            if old_state == self.ST_IDLE and start:
                 self.m_size = m_size
                 self.k_size = k_size
                 self.n_size = n_size
@@ -177,26 +142,13 @@ class TileControllerModel:
             # active_cols = min(S, N - n_base)
 
             if old_state == self.ST_PREP_TILE:
+                remaining_rows = self.m_size - self.m_base
 
-                remaining_rows = (
-                    self.m_size
-                    - self.m_base
-                )
+                remaining_cols = self.n_size - self.n_base
 
-                remaining_cols = (
-                    self.n_size
-                    - self.n_base
-                )
+                self.active_rows = min(self.s_active, remaining_rows)
 
-                self.active_rows = min(
-                    self.s_active,
-                    remaining_rows
-                )
-
-                self.active_cols = min(
-                    self.s_active,
-                    remaining_cols
-                )
+                self.active_cols = min(self.s_active, remaining_cols)
 
             # Advance tile
             #
@@ -206,19 +158,13 @@ class TileControllerModel:
             if (
                 old_state == self.ST_WAIT_DRAIN
                 and drain_done
-                and not (
-                    old_last_m_tile
-                    and old_last_n_tile
-                )
+                and not (old_last_m_tile and old_last_n_tile)
             ):
-
                 if old_last_n_tile:
-
                     self.m_base += self.s_active
                     self.n_base = 0
 
                 else:
-
                     self.n_base += self.s_active
 
             # Update FSM state
@@ -233,46 +179,36 @@ class TileControllerModel:
         done = 0
 
         if self.state == self.ST_IDLE:
-
             busy = 0
 
         elif self.state == self.ST_CLEAR_ACC:
-
             busy = 1
             acc_clear = 1
 
         elif self.state == self.ST_START_COMPUTE:
-
             busy = 1
             compute_start = 1
 
         elif self.state == self.ST_START_DRAIN:
-
             busy = 1
             drain_start = 1
 
         elif self.state == self.ST_DONE:
-
             busy = 0
             done = 1
 
         else:
-
             busy = 1
 
         return {
             "acc_clear": acc_clear,
             "compute_start": compute_start,
             "drain_start": drain_start,
-
             "m_base": self.m_base,
             "n_base": self.n_base,
-
             "active_rows": self.active_rows,
             "active_cols": self.active_cols,
-
             "k_size": self.k_size,
-
             "busy": busy,
             "done": done,
         }
@@ -284,62 +220,37 @@ golden_vectors = []
 
 model = TileControllerModel()
 
-# Add One Test Cycle
-def add_cycle(
-    rst_n,
-    start,
-    m_size,
-    k_size,
-    n_size,
-    s_active,
-    compute_done,
-    drain_done
-):
 
+# Add One Test Cycle
+def add_cycle(rst_n, start, m_size, k_size, n_size, s_active, compute_done, drain_done):
 
     # Input Vector
     input_vector = [
         rst_n,
         start,
-
         m_size,
         k_size,
         n_size,
-
         s_active,
-
         compute_done,
         drain_done,
     ]
 
     # Python Golden Model
     result = model.step(
-        rst_n,
-        start,
-        m_size,
-        k_size,
-        n_size,
-        s_active,
-        compute_done,
-        drain_done
+        rst_n, start, m_size, k_size, n_size, s_active, compute_done, drain_done
     )
-
-
 
     # Golden Vector
     golden_vector = [
         result["acc_clear"],
         result["compute_start"],
         result["drain_start"],
-
         result["m_base"],
         result["n_base"],
-
         result["active_rows"],
         result["active_cols"],
-
         result["k_size"],
-
         result["busy"],
         result["done"],
     ]
@@ -349,83 +260,56 @@ def add_cycle(
 
 
 # Testcase Generator
-def run_testcase(
-    name,
-    m_size,
-    k_size,
-    n_size,
-    s_active,
-    inject_busy_start=False
-):
+def run_testcase(name, m_size, k_size, n_size, s_active, inject_busy_start=False):
 
-    print(
-        f"{name}: "
-        f"M={m_size}, "
-        f"K={k_size}, "
-        f"N={n_size}, "
-        f"S={s_active}"
-    )
+    print(f"{name}: M={m_size}, K={k_size}, N={n_size}, S={s_active}")
 
     # Reset
     add_cycle(
         rst_n=0,
         start=0,
-
         m_size=0,
         k_size=0,
         n_size=0,
-
         s_active=0,
-
         compute_done=0,
-        drain_done=0
+        drain_done=0,
     )
 
     add_cycle(
         rst_n=0,
         start=0,
-
         m_size=0,
         k_size=0,
         n_size=0,
-
         s_active=0,
-
         compute_done=0,
-        drain_done=0
+        drain_done=0,
     )
-
 
     # Release Reset
 
     add_cycle(
         rst_n=1,
         start=0,
-
         m_size=0,
         k_size=0,
         n_size=0,
-
         s_active=0,
-
         compute_done=0,
-        drain_done=0
+        drain_done=0,
     )
-
 
     # Start
     add_cycle(
         rst_n=1,
         start=1,
-
         m_size=m_size,
         k_size=k_size,
         n_size=n_size,
-
         s_active=s_active,
-
         compute_done=0,
-        drain_done=0
+        drain_done=0,
     )
 
     compute_wait_count = 0
@@ -435,7 +319,6 @@ def run_testcase(
 
     # Execute Until DONE
     while True:
-
         start = 0
 
         current_m = m_size
@@ -446,16 +329,13 @@ def run_testcase(
         compute_done = 0
         drain_done = 0
 
-
         # WAIT_COMPUTE
         #
         # Hold for 2 cycles, then assert compute_done
         if model.state == model.ST_WAIT_COMPUTE:
-
             compute_wait_count += 1
 
             if compute_wait_count >= 3:
-
                 compute_done = 1
                 compute_wait_count = 0
 
@@ -463,11 +343,7 @@ def run_testcase(
             #
             # Send incorrect new configuration while DUT busy.
             # DUT should ignore it.
-            if (
-                inject_busy_start
-                and not busy_start_injected
-            ):
-
+            if inject_busy_start and not busy_start_injected:
                 start = 1
 
                 current_m = 3
@@ -478,38 +354,31 @@ def run_testcase(
                 busy_start_injected = True
 
         else:
-
             compute_wait_count = 0
 
         # WAIT_DRAIN
         #
         # Hold for 2 cycles, then assert drain_done
         if model.state == model.ST_WAIT_DRAIN:
-
             drain_wait_count += 1
 
             if drain_wait_count >= 3:
-
                 drain_done = 1
                 drain_wait_count = 0
 
         else:
-
             drain_wait_count = 0
 
         # Add this cycle
         add_cycle(
             rst_n=1,
             start=start,
-
             m_size=current_m,
             k_size=current_k,
             n_size=current_n,
-
             s_active=current_s,
-
             compute_done=compute_done,
-            drain_done=drain_done
+            drain_done=drain_done,
         )
 
         # Stop when ST_DONE is reached
@@ -520,30 +389,24 @@ def run_testcase(
     add_cycle(
         rst_n=1,
         start=0,
-
         m_size=m_size,
         k_size=k_size,
         n_size=n_size,
-
         s_active=s_active,
-
         compute_done=0,
-        drain_done=0
+        drain_done=0,
     )
 
     # One extra IDLE cycle
     add_cycle(
         rst_n=1,
         start=0,
-
         m_size=0,
         k_size=0,
         n_size=0,
-
         s_active=0,
-
         compute_done=0,
-        drain_done=0
+        drain_done=0,
     )
 
 
@@ -554,15 +417,7 @@ def run_testcase(
 #
 # 32 x 32
 # ------------------------------------------------
-run_testcase(
-    name="T01_SINGLE_FULL_TILE",
-
-    m_size=32,
-    k_size=108,
-    n_size=32,
-
-    s_active=32
-)
+run_testcase(name="T01_SINGLE_FULL_TILE", m_size=32, k_size=108, n_size=32, s_active=32)
 
 # ------------------------------------------------
 # T02
@@ -579,14 +434,11 @@ run_testcase(
 
 run_testcase(
     name="T02_FOUR_FULL_TILES",
-
     m_size=64,
     k_size=108,
     n_size=64,
-
     s_active=32,
-
-    inject_busy_start=True
+    inject_busy_start=True,
 )
 
 
@@ -600,15 +452,7 @@ run_testcase(
 # (32,32) = 13 x 18
 # ------------------------------------------------
 
-run_testcase(
-    name="T03_EDGE_TILE",
-
-    m_size=45,
-    k_size=108,
-    n_size=50,
-
-    s_active=32
-)
+run_testcase(name="T03_EDGE_TILE", m_size=45, k_size=108, n_size=50, s_active=32)
 
 
 # ------------------------------------------------
@@ -619,15 +463,7 @@ run_testcase(
 # active_cols = 9
 # ------------------------------------------------
 
-run_testcase(
-    name="T04_SMALL_MATRIX",
-
-    m_size=10,
-    k_size=7,
-    n_size=9,
-
-    s_active=32
-)
+run_testcase(name="T04_SMALL_MATRIX", m_size=10, k_size=7, n_size=9, s_active=32)
 
 
 # ------------------------------------------------
@@ -637,45 +473,21 @@ run_testcase(
 # Verify controller is not hard-coded to 32
 # ------------------------------------------------
 
-run_testcase(
-    name="T05_S_ACTIVE_16",
-
-    m_size=33,
-    k_size=17,
-    n_size=20,
-
-    s_active=16
-)
+run_testcase(name="T05_S_ACTIVE_16", m_size=33, k_size=17, n_size=20, s_active=16)
 
 
 # Write Input HEX File
 
 with open(INPUT_FILE, "w") as file:
-
     for vector in input_vectors:
-
-        file.write(
-            " ".join(
-                f"{value:X}"
-                for value in vector
-            )
-            + "\n"
-        )
+        file.write(" ".join(f"{value:X}" for value in vector) + "\n")
 
 
 # Write Golden HEX File
 
 with open(GOLDEN_FILE, "w") as file:
-
     for vector in golden_vectors:
-
-        file.write(
-            " ".join(
-                f"{value:X}"
-                for value in vector
-            )
-            + "\n"
-        )
+        file.write(" ".join(f"{value:X}" for value in vector) + "\n")
 
 
 # Summary
@@ -685,16 +497,10 @@ print("=============================================")
 print(" Tile Controller Vector Generation Done ")
 print("=============================================")
 
-print(
-    f"Input File  : {INPUT_FILE}"
-)
+print(f"Input File  : {INPUT_FILE}")
 
-print(
-    f"Golden File : {GOLDEN_FILE}"
-)
+print(f"Golden File : {GOLDEN_FILE}")
 
-print(
-    f"Total Cycle : {len(input_vectors)}"
-)
+print(f"Total Cycle : {len(input_vectors)}")
 
 print("=============================================")
