@@ -164,7 +164,6 @@ module tb_fifo_bank;
             golden_empty =
                 golden_vectors[test_idx][131:128];
 
-
             golden_head_data[3] =
                 golden_vectors[test_idx][127:96];
 
