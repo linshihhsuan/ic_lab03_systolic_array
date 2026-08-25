@@ -51,9 +51,7 @@ def enc(v, w):
     lo, hi = lim(w)
 
     if not lo <= v <= hi:
-        raise OverflowError(
-            f"{v} does not fit signed {w}-bit"
-        )
+        raise OverflowError(f"{v} does not fit signed {w}-bit")
 
     return v & ((1 << w) - 1)
 
@@ -72,9 +70,7 @@ def wr(f, v, w):
 
     hex_digits = (w + 3) // 4
 
-    f.write(
-        f"{enc(v, w):0{hex_digits}X}\n"
-    )
+    f.write(f"{enc(v, w):0{hex_digits}X}\n")
 
 
 # Function: choose_s
@@ -106,24 +102,17 @@ def choose_s(m, k, n):
     best = None
 
     for s in range(1, S_MAX + 1):
-
         # ceil(M / S)
         tm = (m + s - 1) // s
 
         # ceil(N / S)
         tn = (n + s - 1) // s
 
-        cost = (
-            tm * tn * (k + 4)
-            + tn * m
-            + tm * n
-            + m * n
-        )
+        cost = tm * tn * (k + 4) + tn * m + tm * n + m * n
 
         # 使用 strict <
         # cost 相同時不更新，因此保留較小 S
         if best is None or cost < best:
-
             best = cost
             best_s = s
 
@@ -159,54 +148,24 @@ def mk(
 
     # Random pattern
     if pattern == "random":
-
-        return [
-            [
-                rng.randint(vmin, vmax)
-                for _ in range(cols)
-            ]
-            for _ in range(rows)
-        ]
-
+        return [[rng.randint(vmin, vmax) for _ in range(cols)] for _ in range(rows)]
 
     # All ones
     if pattern == "ones":
-
-        return [
-            [
-                1
-                for _ in range(cols)
-            ]
-            for _ in range(rows)
-        ]
-
+        return [[1 for _ in range(cols)] for _ in range(rows)]
 
     # Checkerboard +1 / -1
     if pattern == "checker":
-
         return [
-            [
-                1
-                if ((r + c + salt) & 1) == 0
-                else -1
-                for c in range(cols)
-            ]
+            [1 if ((r + c + salt) & 1) == 0 else -1 for c in range(cols)]
             for r in range(rows)
         ]
-
 
     # Ramp pattern
     span = vmax - vmin + 1
 
     return [
-        [
-            vmin
-            + (
-                (r * cols + c + salt)
-                % span
-            )
-            for c in range(cols)
-        ]
+        [vmin + ((r * cols + c + salt) % span) for c in range(cols)]
         for r in range(rows)
     ]
 
@@ -240,11 +199,7 @@ def mm(a, b):
     n = len(b[0])
 
     # 建立 M × N 的 zero matrix
-    c = [
-        [0] * n
-        for _ in range(m)
-    ]
-
+    c = [[0] * n for _ in range(m)]
 
     # Matrix Multiplication
     #
@@ -252,14 +207,8 @@ def mm(a, b):
     # =
     # Σ A[i][kk] × B[kk][j]
     for i in range(m):
-
         for j in range(n):
-
-            x = sum(
-                a[i][kk] * b[kk][j]
-                for kk in range(k)
-            )
-
+            x = sum(a[i][kk] * b[kk][j] for kk in range(k))
 
             # 檢查結果是否可放入 ACC_WIDTH
             enc(x, ACC_WIDTH)
@@ -284,11 +233,7 @@ def mm(a, b):
 # [1, 2, 3, 4]
 def flat(x):
 
-    return [
-        v
-        for row in x
-        for v in row
-    ]
+    return [v for row in x for v in row]
 
 
 # Function: drain_order
@@ -318,40 +263,27 @@ def drain_order(c, m, n, s):
 
     out = []
 
-
     # M tile outer loop
 
     for mb in range(0, m, s):
-
         # Edge tile 的有效 row 數
         ar = min(
             s,
             m - mb,
         )
 
-
         # N tile inner loop
         for nb in range(0, n, s):
-
             # Edge tile 的有效 column 數
             ac = min(
                 s,
                 n - nb,
             )
 
-
             # Tile 內使用 row-major order
             for r in range(ar):
-
                 for col in range(ac):
-
-                    out.append(
-                        c[
-                            mb + r
-                        ][
-                            nb + col
-                        ]
-                    )
+                    out.append(c[mb + r][nb + col])
 
     return out
 
@@ -361,7 +293,6 @@ def main():
 
     # Command-line arguments
     ap = argparse.ArgumentParser()
-
 
     # Matrix dimensions
     ap.add_argument(
@@ -382,7 +313,6 @@ def main():
         default=3,
     )
 
-
     # Random seed
     # 支援：
     #   4883
@@ -392,7 +322,6 @@ def main():
         type=lambda x: int(x, 0),
         default=0x1313,
     )
-
 
     # Data pattern
     ap.add_argument(
@@ -405,7 +334,6 @@ def main():
         ],
         default="random",
     )
-
 
     # Input data range
     ap.add_argument(
@@ -420,14 +348,12 @@ def main():
         default=8,
     )
 
-
     # Output directory
     ap.add_argument(
         "--outdir",
         type=Path,
         default=Path("vectors"),
     )
-
 
     # Parse arguments
     args = ap.parse_args()
@@ -436,26 +362,14 @@ def main():
     k = args.k
     n = args.n
 
-
     # 檢查 Matrix Dimension 是否符合 RTL 規格
-    if not (
-        1 <= m <= MAX_M
-        and 1 <= k <= MAX_K
-        and 1 <= n <= MAX_N
-    ):
-
-        raise SystemExit(
-            "dimensions out of range"
-        )
-
+    if not (1 <= m <= MAX_M and 1 <= k <= MAX_K and 1 <= n <= MAX_N):
+        raise SystemExit("dimensions out of range")
 
     # 建立 deterministic random generator
     #
     # 相同 seed 可以產生完全相同的 testcase
-    rng = random.Random(
-        args.seed
-    )
-
+    rng = random.Random(args.seed)
 
     # 產生 A Matrix
     #
@@ -470,7 +384,6 @@ def main():
         args.value_max,
         0,
     )
-
 
     # 產生 B Matrix
     #
@@ -489,14 +402,12 @@ def main():
         17,
     )
 
-
     # 計算 RTL 對應的最佳 S
     s, cost = choose_s(
         m,
         k,
         n,
     )
-
 
     # Python Golden Model
     #
@@ -506,11 +417,9 @@ def main():
         b,
     )
 
-
     # 將 A/B 轉為 row-major 1D vector
     af = flat(a)
     bf = flat(b)
-
 
     # 將 C 依 DUT output order 排列
     g = drain_order(
@@ -520,13 +429,11 @@ def main():
         s,
     )
 
-
     # 建立 output directory
     args.outdir.mkdir(
         parents=True,
         exist_ok=True,
     )
-
 
     # 產生 input.hex
     #
@@ -544,16 +451,12 @@ def main():
     #
     # A row-major
     # B row-major
-    input_path = (
-        args.outdir
-        / "input.hex"
-    )
+    input_path = args.outdir / "input.hex"
 
     with input_path.open(
         "w",
         encoding="ascii",
     ) as f:
-
         # Header
         for x in [
             MAGIC,
@@ -564,23 +467,19 @@ def main():
             len(af),
             len(bf),
         ]:
-
             wr(
                 f,
                 x,
                 DATA_WIDTH,
             )
-
 
         # A / B Matrix
         for x in af + bf:
-
             wr(
                 f,
                 x,
                 DATA_WIDTH,
             )
-
 
     # 產生 golden.hex
     #
@@ -592,54 +491,27 @@ def main():
     #   -> N-tile
     #      -> local-row
     #         -> local-col
-    golden_path = (
-        args.outdir
-        / "golden.hex"
-    )
-
+    golden_path = args.outdir / "golden.hex"
 
     with golden_path.open(
         "w",
         encoding="ascii",
     ) as f:
-
         for x in g:
-
             wr(
                 f,
                 x,
                 ACC_WIDTH,
             )
 
-
     # 顯示 testcase 資訊
-    print(
-        f"[GEN] M={m} "
-        f"K={k} "
-        f"N={n} "
-        f"S_opt={s} "
-        f"cost={cost}"
-    )
+    print(f"[GEN] M={m} K={k} N={n} S_opt={s} cost={cost}")
 
-    print(
-        f"[GEN] "
-        f"{input_path} "
-        f"words={7 + len(af) + len(bf)}"
-    )
+    print(f"[GEN] {input_path} words={7 + len(af) + len(bf)}")
 
-    print(
-        f"[GEN] "
-        f"{golden_path} "
-        f"words={len(g)}"
-    )
+    print(f"[GEN] {golden_path} words={len(g)}")
 
-    print(
-        "[GEN] golden order: "
-        "M-tile -> "
-        "N-tile -> "
-        "local-row -> "
-        "local-col"
-    )
+    print("[GEN] golden order: M-tile -> N-tile -> local-row -> local-col")
 
 
 # Python Entry Point
