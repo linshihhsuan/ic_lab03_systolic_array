@@ -47,7 +47,6 @@ module tb_tile_controller;
 
 
     // Clock
-
     logic i_clk;
 
     initial begin
@@ -55,13 +54,12 @@ module tb_tile_controller;
         i_clk = 1'b0;
 
         forever
-            #5 i_clk = ~i_clk;
+            #4 i_clk = ~i_clk;  // 125MHz
 
     end
 
 
     // DUT Inputs
-
     logic i_rst_n;
 
     logic i_start;

@@ -33,6 +33,7 @@
 
 module systolic_top #(
 
+
     parameter integer DATA_WIDTH     = 32,
     parameter integer ACC_WIDTH      = 71,
 
@@ -43,97 +44,64 @@ module systolic_top #(
     parameter integer MAX_N          = 64,
 
     parameter integer IN_FIFO_DEPTH  = 128,
-    // By default the result FIFO can hold one complete maximum-size
-    // output matrix.  This allows software to wait for o_done before
-    // beginning to read results without deadlocking the drain path.
+
+    // output FIFO 最多可以把整個最大的 C matrix 存下來
     parameter integer OUT_FIFO_DEPTH = MAX_M * MAX_N
 
 )(
+    // 系統輸入
     input logic i_clk,
     input logic i_rst_n,
 
-    // ============================================================
-    // GEMM configuration
-    // ============================================================
-
+    // 開始可執行一次 GEMM
     input logic i_start,
 
+    // 外部傳入的 M, K, N
     input logic [$clog2(MAX_M+1)-1:0] i_m_size,
     input logic [$clog2(MAX_K+1)-1:0] i_k_size,
     input logic [$clog2(MAX_N+1)-1:0] i_n_size,
 
-    // ============================================================
     // A FIFO bank write interface
-    // ============================================================
-
     input logic [S_MAX-1:0] i_a_wren,
-
     input logic signed [DATA_WIDTH-1:0] i_a_wdata [S_MAX],  // [0:S_MAX-1]
-
     output logic [S_MAX-1:0] o_a_full,
 
-    // ============================================================
     // B FIFO bank write interface
-    // ============================================================
-
     input logic [S_MAX-1:0] i_b_wren,
-
     input logic signed [DATA_WIDTH-1:0] i_b_wdata [S_MAX],
-
     output logic [S_MAX-1:0] o_b_full,
 
-    // ============================================================
     // Result FIFO read interface
-    // ============================================================
-
+    // 最後 C matrix 不會直接從 systolic array port 跳出去
     input  logic i_result_rden,
-
     output logic signed [ACC_WIDTH-1:0] o_result_data,
-
     output logic o_result_data_vld,
     output logic o_result_empty,
     output logic o_result_full,
 
-    // ============================================================
     // Status
-    // ============================================================
-
     output logic o_busy,
     output logic o_done,
     output logic o_cfg_error
 );
 
-    // ============================================================
     // Width definitions
-    // ============================================================
+    localparam integer MW = $clog2(MAX_M + 1);
 
-    localparam integer MW =
-        $clog2(MAX_M + 1);
+    localparam integer KW = $clog2(MAX_K + 1);
 
-    localparam integer KW =
-        $clog2(MAX_K + 1);
+    localparam integer NW = $clog2(MAX_N + 1);
 
-    localparam integer NW =
-        $clog2(MAX_N + 1);
+    localparam integer SW = $clog2(S_MAX + 1);
 
-    localparam integer SW =
-        $clog2(S_MAX + 1);
+    localparam integer PEIDXW = (S_MAX <= 1) ? 1 : $clog2(S_MAX);
 
-    localparam integer PEIDXW =
-        (S_MAX <= 1) ? 1 : $clog2(S_MAX);
-
-    // ============================================================
-    // Configuration registers
-    // ============================================================
-
+    // GEMM 執行期間，external port 就算改掉，也不能影響正在執行的 operation
     logic [MW-1:0] m_size_r;
     logic [KW-1:0] k_size_r;
     logic [NW-1:0] n_size_r;
 
-    // ============================================================
     // Top FSM
-    // ============================================================
-
     typedef enum logic [2:0] {
         TOP_IDLE,
         TOP_SIZE_START,
@@ -147,20 +115,14 @@ module systolic_top #(
     top_state_t top_state_r;
     top_state_t top_state_n;
 
-    // ============================================================
     // size_selector signals
-    // ============================================================
-
     logic size_start;
     logic size_done;
     logic size_config_valid;
 
     logic [SW-1:0] s_active;
 
-    // ============================================================
     // tile_controller signals
-    // ============================================================
-
     logic tile_start;
 
     logic tile_acc_clear;
@@ -180,30 +142,21 @@ module systolic_top #(
     logic compute_done;
     logic drain_done;
 
-    // ============================================================
     // A FIFO bank signals
-    // ============================================================
-
     logic signed [DATA_WIDTH-1:0]
         a_head_data [S_MAX];
 
     logic [S_MAX-1:0] a_head_valid;
     logic [S_MAX-1:0] a_pop;
 
-    // ============================================================
     // B FIFO bank signals
-    // ============================================================
-
     logic signed [DATA_WIDTH-1:0]
         b_head_data [S_MAX];
 
     logic [S_MAX-1:0] b_head_valid;
     logic [S_MAX-1:0] b_pop;
 
-    // ============================================================
     // input_skew → systolic_array
-    // ============================================================
-
     logic signed [DATA_WIDTH-1:0]
         skew_a_data [S_MAX];
 
@@ -216,10 +169,7 @@ module systolic_top #(
     logic skew_step_en;
     logic skew_done;
 
-    // ============================================================
     // result_drain ↔ systolic_array
-    // ============================================================
-
     logic [PEIDXW-1:0] drain_pe_row;
     logic [PEIDXW-1:0] drain_pe_col;
 
@@ -229,35 +179,24 @@ module systolic_top #(
     logic signed [ACC_WIDTH-1:0]
         pe_acc_bus [S_MAX][S_MAX];
 
-    // ============================================================
     // Drain output
-    // ============================================================
-
     logic signed [ACC_WIDTH-1:0]
         drain_result_data;
 
     logic drain_result_valid;
     logic drain_result_ready;
 
-    // ============================================================
     // Output FIFO
-    // ============================================================
-
     logic out_fifo_wren;
 
-    // ============================================================
     // Top FSM next-state
-    // ============================================================
-
     always_comb begin
 
         top_state_n = top_state_r;
 
         case (top_state_r)
 
-            // --------------------------------------------------------
             // Wait for a new GEMM command
-            // --------------------------------------------------------
             TOP_IDLE: begin
 
                 if (i_start)
@@ -265,20 +204,14 @@ module systolic_top #(
 
             end
 
-
-            // --------------------------------------------------------
             // One-cycle pulse to start size_selector
-            // --------------------------------------------------------
             TOP_SIZE_START: begin
 
                 top_state_n = TOP_SIZE_WAIT;
 
             end
 
-
-            // --------------------------------------------------------
             // Wait until S_active calculation finishes
-            // --------------------------------------------------------
             TOP_SIZE_WAIT: begin
 
                 if (size_done) begin
@@ -290,20 +223,14 @@ module systolic_top #(
 
             end
 
-
-            // --------------------------------------------------------
             // One-cycle pulse to start tile_controller
-            // --------------------------------------------------------
             TOP_TILE_START: begin
 
                 top_state_n = TOP_RUN;
 
             end
 
-
-            // --------------------------------------------------------
             // Execute all M/N tiles
-            // --------------------------------------------------------
             TOP_RUN: begin
 
                 if (tile_done)
@@ -311,28 +238,20 @@ module systolic_top #(
 
             end
 
-
-            // --------------------------------------------------------
             // One-cycle done state
-            // --------------------------------------------------------
             TOP_DONE: begin
 
                 top_state_n = TOP_IDLE;
 
             end
 
-
-            // --------------------------------------------------------
             // Configuration error
-            // --------------------------------------------------------
             TOP_ERROR: begin
 
                 top_state_n = TOP_IDLE;
 
             end
 
-
-            // --------------------------------------------------------
             default: begin
 
                 top_state_n = TOP_IDLE;
@@ -343,10 +262,7 @@ module systolic_top #(
 
     end
 
-    // ============================================================
     // Top sequential logic
-    // ============================================================
-
     always_ff @(posedge i_clk) begin
 
         if (!i_rst_n) begin
@@ -376,10 +292,7 @@ module systolic_top #(
 
     end
 
-    // ============================================================
     // Start pulse generation
-    // ============================================================
-
     always_comb begin
 
         size_start = 1'b0;
@@ -404,10 +317,7 @@ module systolic_top #(
 
     end
 
-    // ============================================================
     // Top status
-    // ============================================================
-
     always_comb begin
 
         o_busy      = 1'b0;
@@ -439,11 +349,8 @@ module systolic_top #(
     end
 
 
-    // ============================================================
     // Stage13.6
     // size_selector
-    // ============================================================
-
     size_selector #(
         .S_MAX (S_MAX),
         .MAX_M (MAX_M),
@@ -468,11 +375,8 @@ module systolic_top #(
     );
 
 
-    // ============================================================
     // Stage13.7
     // tile_controller
-    // ============================================================
-
     tile_controller #(
         .S_MAX (S_MAX),
         .MAX_M (MAX_M),
@@ -510,11 +414,8 @@ module systolic_top #(
     );
 
 
-    // ============================================================
     // Stage13.2
     // A FIFO bank
-    // ============================================================
-
     fifo_bank #(
         .NUM_LANES  (S_MAX),
         .DATA_WIDTH (DATA_WIDTH),
@@ -536,11 +437,8 @@ module systolic_top #(
     );
 
 
-    // ============================================================
     // Stage13.2
     // B FIFO bank
-    // ============================================================
-
     fifo_bank #(
         .NUM_LANES  (S_MAX),
         .DATA_WIDTH (DATA_WIDTH),
@@ -562,11 +460,8 @@ module systolic_top #(
     );
 
 
-    // ============================================================
     // Stage13.5
     // input_skew
-    // ============================================================
-
     input_skew #(
         .DATA_WIDTH (DATA_WIDTH),
         .S_MAX      (S_MAX),
@@ -606,7 +501,6 @@ module systolic_top #(
     );
 
 
-    // ============================================================
     // COMPUTE_DONE CONTRACT
     //
     // IMPORTANT:
@@ -617,16 +511,11 @@ module systolic_top #(
     // have completed.
     //
     // It must NOT mean simply "last FIFO word was popped".
-    // ============================================================
-
     assign compute_done = skew_done;
 
 
-    // ============================================================
     // Stage13.4
     // systolic_array
-    // ============================================================
-
     systolic_array #(
         .DATA_WIDTH (DATA_WIDTH),
         .ACC_WIDTH  (ACC_WIDTH),
@@ -664,11 +553,7 @@ module systolic_top #(
     end
 
 
-    // ============================================================
-    // Stage13.8
     // result_drain
-    // ============================================================
-
     result_drain #(
         .S_MAX     (S_MAX),
         .MAX_M     (MAX_M),
@@ -706,13 +591,10 @@ module systolic_top #(
     );
 
 
-    // ============================================================
     // Output FIFO write handshake
     //
     // Result ordering is tile-major.  Tiles traverse N first and then
     // M; elements within a tile are emitted in row-major order.
-    // ============================================================
-
     assign drain_result_ready =
         !o_result_full;
 
@@ -721,11 +603,7 @@ module systolic_top #(
         drain_result_ready;
 
 
-    // ============================================================
-    // Stage13.1
     // Output FIFO
-    // ============================================================
-
     sync_fifo #(
         .DATA_WIDTH (ACC_WIDTH),
         .DEPTH      (OUT_FIFO_DEPTH)

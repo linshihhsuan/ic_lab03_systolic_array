@@ -113,31 +113,21 @@ module size_selector #(
         if (s_i >= 1) begin
 
             // ceil(M / S)
-            //
-            // ceil(a / b) = (a + b - 1) / b
-
+            // 為了要取無條件進入
+            // 修改成 ceil(a / b) = (a + b - 1) / b
             tile_m_i =
                 (m_r + s_i - 1) / s_i;
 
             // ceil(N / S)
-
+            // 取無條件進入
             tile_n_i =
                 (n_r + s_i - 1) / s_i;
 
-            // Ideal execution cost for the implemented datapath.
-            //
-            // Across all tiles:
-            //   compute = Tm*Tn*(K-2) + Tn*M + Tm*N
-            //   drain   = M*N              (one result per cycle)
-            //   control = 6*Tm*Tn          (tile FSM overhead)
-            //
-            // FIFO/input/output stalls are intentionally excluded.
-
+            // 公式 Total clock
             cost_i =
-                (tile_m_i * tile_n_i * (k_r + 4)) +
-                (tile_n_i * m_r) +
-                (tile_m_i * n_r) +
-                (m_r * n_r);
+                tile_m_i *
+                tile_n_i *
+                (k_r + 3*s_i - 2);
 
             current_cost =
                 cost_i[COST_WIDTH-1:0];
@@ -148,7 +138,6 @@ module size_selector #(
 
 
     // Sequential exhaustive search
-
     always_ff @(posedge i_clk) begin
 
         if (!i_rst_n) begin
@@ -174,8 +163,6 @@ module size_selector #(
             // o_done = one-cycle pulse
             o_done <= 1'b0;
 
-
-
             // size_selector 一旦開始工作，就不再直接依賴外面的 i_m/i_k/i_n
             if (i_start && !active_r) begin
 
@@ -185,12 +172,14 @@ module size_selector #(
                 n_r <= i_n;
 
                 if (
+
                     (i_m >= 1) &&
                     (i_m <= MAX_M) &&
                     (i_k >= 1) &&
                     (i_k <= MAX_K) &&
                     (i_n >= 1) &&
                     (i_n <= MAX_N)
+
                 ) begin
 
                     // 現在要測的 S = 1
@@ -229,15 +218,12 @@ module size_selector #(
 
 
             // Search S = 1 ... S_MAX
-
-
             else if (active_r) begin
 
                 // Strict <
                 //
                 // Therefore:
                 // equal cost -> keep previous smaller S.
-
                 if (current_cost < best_cost_r) begin
 
                     best_cost_r <= current_cost;
@@ -247,7 +233,6 @@ module size_selector #(
 
 
                 // Last candidate
-
                 if (search_s_r == S_MAX) begin
 
                     active_r <= 1'b0;
@@ -256,7 +241,6 @@ module size_selector #(
 
                     // Current S_MAX might itself be the winner,
                     // so final output must include this comparison.
-
                     if (current_cost < best_cost_r) begin
 
                         o_s_opt <=
@@ -281,7 +265,6 @@ module size_selector #(
                 end
 
                 // Next candidate
-
                 else begin
 
                     search_s_r <=

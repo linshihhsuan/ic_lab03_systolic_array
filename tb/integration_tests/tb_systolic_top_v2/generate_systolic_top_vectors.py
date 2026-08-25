@@ -7,7 +7,6 @@ import random
 from pathlib import Path
 
 # 全域參數
-# 必須與目前 systolic_top.sv / size_selector.sv 規格一致
 DATA_WIDTH = 32
 ACC_WIDTH = 71
 S_MAX = 32

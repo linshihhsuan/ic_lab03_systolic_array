@@ -32,15 +32,19 @@
 // verilog_lint: waive-stop
 
 module tile_controller #(
+ 
     parameter integer S_MAX = 32,
     parameter integer MAX_M = 256,
     parameter integer MAX_K = 108,
     parameter integer MAX_N = 64
+
 )(
+    // 系統輸入
     input  logic i_clk,
     input  logic i_rst_n,
 
-    // Configuration
+    // 只有在確定 tile 尺寸時才會傳入一次，每個 tile 的切換
+    // 不受 i_start 決定
     input  logic i_start,
 
     input  logic [$clog2(MAX_M+1)-1:0] i_m_size,
@@ -61,30 +65,33 @@ module tile_controller #(
     output logic o_compute_start,
     output logic o_drain_start,
 
-    // Current tile information
+    // 代表目前 C tile 在 row dimension 的起始位置
     output logic [$clog2(MAX_M+1)-1:0] o_m_base,
+
+    // 代表目前 C tile 在 column dimension 的起始位置
     output logic [$clog2(MAX_N+1)-1:0] o_n_base,
 
+    // Tell input_skew, systolic_array, result_drain
+    // Actal work PE Array
     output logic [$clog2(S_MAX+1)-1:0] o_active_rows,
     output logic [$clog2(S_MAX+1)-1:0] o_active_cols,
 
-    // Full K dimension
+    // 因為現在的架構對每個 C tile 都直接算完整 K，所以不需要 k_base
     output logic [$clog2(MAX_K+1)-1:0] o_k_size,
 
     // Status
     output logic o_busy,
     output logic o_done
+
 );
 
-    // Width definitions
-
+    // Bit width definitions
     localparam integer MW = $clog2(MAX_M + 1);
     localparam integer KW = $clog2(MAX_K + 1);
     localparam integer NW = $clog2(MAX_N + 1);
     localparam integer SW = $clog2(S_MAX + 1);
 
     // FSM definition
-
     typedef enum logic [2:0] {
         ST_IDLE,
         ST_PREP_TILE,
@@ -99,15 +106,13 @@ module tile_controller #(
     state_t state_r;
     state_t state_n;
 
-    // Configuration registers
-
+    // 內部訊號
     logic [MW-1:0] m_size_r;
     logic [KW-1:0] k_size_r;
     logic [NW-1:0] n_size_r;
     logic [SW-1:0] s_active_r;
 
     // Tile registers
-
     logic [MW-1:0] m_base_r;
     logic [NW-1:0] n_base_r;
 
@@ -115,7 +120,6 @@ module tile_controller #(
     logic [SW-1:0] active_cols_r;
 
     // Tile boundary detection
-
     logic last_m_tile;
     logic last_n_tile;
 
@@ -124,16 +128,12 @@ module tile_controller #(
         // Current tile is the final M tile when:
         //
         // M - m_base <= S_active
-
-        last_m_tile =
-            ((m_size_r - m_base_r) <= MW'(s_active_r));
+        last_m_tile = ((m_size_r - m_base_r) <= MW'(s_active_r));
 
         // Current tile is the final N tile when:
         //
         // N - n_base <= S_active
-
-        last_n_tile =
-            ((n_size_r - n_base_r) <= NW'(s_active_r));
+        last_n_tile = ((n_size_r - n_base_r) <= NW'(s_active_r));
 
     end
 
