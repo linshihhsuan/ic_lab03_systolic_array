@@ -39,15 +39,16 @@ module fifo_bank #(
 
 )(
 
-    // System input
+    // 系統輸入
     input logic i_clk,
     input logic i_rst_n,
 
-    // Write interface
+    // 寫入致能及寫入資料
     input logic [NUM_LANES-1:0] i_wren,
     input logic signed [DATA_WIDTH-1:0] i_wdata [NUM_LANES],
 
-    // Head / pop interface
+    // Head Buffer 資料及有效訊號
+    // i_pop 由 input_skew 傳入
     output logic signed [DATA_WIDTH-1:0] o_head_data [NUM_LANES],
     output logic [NUM_LANES-1:0] o_head_valid,
     input  logic [NUM_LANES-1:0] i_pop,
@@ -58,25 +59,24 @@ module fifo_bank #(
 
 );
 
-    localparam int unsigned CountWidth =
-        (DEPTH <= 1) ? 1 : $clog2(DEPTH + 1);
-
-    // FIFO internal signals
+    // FIFO 內部訊號
     logic [NUM_LANES-1:0] fifo_rden;
     logic signed [DATA_WIDTH-1:0] fifo_rdata [NUM_LANES];
     logic [NUM_LANES-1:0] fifo_rdata_vld;
 
-    // Head buffers
+    // Head buffers 內部訊號
     logic signed [DATA_WIDTH-1:0] head_data_r [NUM_LANES];
     logic [NUM_LANES-1:0] head_valid_r;
+
+    // 防止掏空整個 FIFO
     logic [NUM_LANES-1:0] refill_pending_r;
 
     // Output assignments
+    // 可以直接 assign
     always_comb begin
         o_head_data  = head_data_r;
         o_head_valid = head_valid_r;
     end
-
 
     // Generate FIFO lanes
     genvar lane;
@@ -154,6 +154,7 @@ module fifo_bank #(
             for (int j=0; j<NUM_LANES; j++) begin
 
                 // Consumer pops current head
+                // head_valid 要做歸零
                 if (i_pop[j] && head_valid_r[j]) begin
                     head_valid_r[j] <= 1'b0;
                 end

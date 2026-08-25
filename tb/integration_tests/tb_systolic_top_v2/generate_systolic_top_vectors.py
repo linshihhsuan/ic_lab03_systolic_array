@@ -461,7 +461,7 @@ def main():
     #
     # Shape：
     #   M × K
-    A = mk(
+    a = mk(
         m,
         k,
         args.pattern,
@@ -479,7 +479,7 @@ def main():
     #
     # salt = 17
     # 用來讓 deterministic pattern 與 A 有差異
-    B = mk(
+    b = mk(
         k,
         n,
         args.pattern,
@@ -501,20 +501,20 @@ def main():
     # Python Golden Model
     #
     # C = A × B
-    C = mm(
-        A,
-        B,
+    c = mm(
+        a,
+        b,
     )
 
 
     # 將 A/B 轉為 row-major 1D vector
-    Af = flat(A)
-    Bf = flat(B)
+    af = flat(a)
+    bf = flat(b)
 
 
     # 將 C 依 DUT output order 排列
-    G = drain_order(
-        C,
+    g = drain_order(
+        c,
         m,
         n,
         s,
@@ -561,8 +561,8 @@ def main():
             k,
             n,
             s,
-            len(Af),
-            len(Bf),
+            len(af),
+            len(bf),
         ]:
 
             wr(
@@ -573,7 +573,7 @@ def main():
 
 
         # A / B Matrix
-        for x in Af + Bf:
+        for x in af + bf:
 
             wr(
                 f,
@@ -603,7 +603,7 @@ def main():
         encoding="ascii",
     ) as f:
 
-        for x in G:
+        for x in g:
 
             wr(
                 f,
@@ -624,13 +624,13 @@ def main():
     print(
         f"[GEN] "
         f"{input_path} "
-        f"words={7 + len(Af) + len(Bf)}"
+        f"words={7 + len(af) + len(bf)}"
     )
 
     print(
         f"[GEN] "
         f"{golden_path} "
-        f"words={len(G)}"
+        f"words={len(g)}"
     )
 
     print(

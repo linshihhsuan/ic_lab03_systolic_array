@@ -40,14 +40,16 @@ module systolic_array #(
 
 )(
 
+    // 系統輸入
     input logic i_clk,
     input logic i_rst_n,
 
     // Global array control
+    // i_step_en 由 input_skew 傳入
     input logic i_step_en,
     input logic i_acc_clear,
 
-    // Runtime active PE region
+    // 需要啟動的 PE 範圍 (active)
     // Active PE range:
     //   row = 0 .. i_active_rows-1
     //   col = 0 .. i_active_cols-1
@@ -96,7 +98,6 @@ module systolic_array #(
     //
     // a_data_link[row][col+1]
     //      = PE[row][col] output
-
     logic signed [DATA_WIDTH-1:0]
         a_data_link [S_MAX][S_MAX+1];
 
@@ -111,7 +112,6 @@ module systolic_array #(
     //
     // b_data_link[row+1][col]
     //      = PE[row][col] output
-
     logic signed [DATA_WIDTH-1:0]
         b_data_link [S_MAX+1][S_MAX];
 

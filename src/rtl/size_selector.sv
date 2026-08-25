@@ -32,6 +32,7 @@
 // verilog_lint: waive-stop
 
 module size_selector #(
+
     parameter int MAX_M = 256,
     parameter int MAX_K = 108,
     parameter int MAX_N = 64,
@@ -50,18 +51,13 @@ module size_selector #(
         (S_MAX <= 1) ? 1 : $clog2(S_MAX + 1),
 
     // Conservative upper bound for ideal, non-stalled execution cost.
-    parameter int COST_WIDTH =
-        $clog2(
-            MAX_M *
-            MAX_N *
-            (MAX_K + 2*S_MAX + 7)
-            + 1
-        )
+    parameter int COST_WIDTH = $clog2( MAX_M * MAX_N * (MAX_K + 2*S_MAX + 7) + 1 )
 )(
+    // 系統輸入
     input  logic i_clk,
     input  logic i_rst_n,
 
-    // Start one size-search operation.
+    // 控制訊號，由 tile_controller 傳入
     input  logic i_start,
 
     // Runtime matrix dimensions.
@@ -69,7 +65,7 @@ module size_selector #(
     input  logic [K_WIDTH-1:0] i_k,
     input  logic [N_WIDTH-1:0] i_n,
 
-    // Optimal active systolic-array size.
+    // s_active 的最佳解
     output logic [S_WIDTH-1:0] o_s_opt,
 
     // Estimated cycle cost corresponding to o_s_opt.
@@ -82,10 +78,7 @@ module size_selector #(
 );
 
 
-    // ============================================================
     // Internal registers
-    // ============================================================
-
     logic [M_WIDTH-1:0] m_r;
     logic [K_WIDTH-1:0] k_r;
     logic [N_WIDTH-1:0] n_r;
@@ -97,11 +90,7 @@ module size_selector #(
 
     logic active_r;
 
-
-    // ============================================================
     // Current candidate calculation
-    // ============================================================
-
     logic [COST_WIDTH-1:0] current_cost;
 
     integer s_i;
@@ -123,23 +112,18 @@ module size_selector #(
 
         if (s_i >= 1) begin
 
-            // ----------------------------------------------------
             // ceil(M / S)
             //
             // ceil(a / b) = (a + b - 1) / b
-            // ----------------------------------------------------
 
             tile_m_i =
                 (m_r + s_i - 1) / s_i;
 
-            // ----------------------------------------------------
             // ceil(N / S)
-            // ----------------------------------------------------
 
             tile_n_i =
                 (n_r + s_i - 1) / s_i;
 
-            // ----------------------------------------------------
             // Ideal execution cost for the implemented datapath.
             //
             // Across all tiles:
@@ -148,7 +132,6 @@ module size_selector #(
             //   control = 6*Tm*Tn          (tile FSM overhead)
             //
             // FIFO/input/output stalls are intentionally excluded.
-            // ----------------------------------------------------
 
             cost_i =
                 (tile_m_i * tile_n_i * (k_r + 4)) +
@@ -164,9 +147,7 @@ module size_selector #(
     end
 
 
-    // ============================================================
     // Sequential exhaustive search
-    // ============================================================
 
     always_ff @(posedge i_clk) begin
 
@@ -194,21 +175,14 @@ module size_selector #(
             o_done <= 1'b0;
 
 
-            // ====================================================
-            // Start new search
-            // ====================================================
 
+            // size_selector 一旦開始工作，就不再直接依賴外面的 i_m/i_k/i_n
             if (i_start && !active_r) begin
 
                 // Latch matrix dimensions.
                 m_r <= i_m;
                 k_r <= i_k;
                 n_r <= i_n;
-
-
-                // ------------------------------------------------
-                // Configuration legality
-                // ------------------------------------------------
 
                 if (
                     (i_m >= 1) &&
@@ -219,12 +193,15 @@ module size_selector #(
                     (i_n <= MAX_N)
                 ) begin
 
+                    // 現在要測的 S = 1
                     search_s_r <=
                         {{(S_WIDTH-1){1'b0}}, 1'b1};
 
+                    // 目前最佳的 S = 1
                     best_s_r <=
                         {{(S_WIDTH-1){1'b0}}, 1'b1};
 
+                    // 目前最佳 cost = ∞，就是 unsigned 最大值
                     best_cost_r <=
                         {COST_WIDTH{1'b1}};
 
@@ -250,9 +227,9 @@ module size_selector #(
             end
 
 
-            // ====================================================
+
             // Search S = 1 ... S_MAX
-            // ====================================================
+
 
             else if (active_r) begin
 
@@ -269,9 +246,7 @@ module size_selector #(
                 end
 
 
-                // ------------------------------------------------
                 // Last candidate
-                // ------------------------------------------------
 
                 if (search_s_r == S_MAX) begin
 
@@ -305,9 +280,7 @@ module size_selector #(
 
                 end
 
-                // ------------------------------------------------
                 // Next candidate
-                // ------------------------------------------------
 
                 else begin
 
@@ -320,9 +293,7 @@ module size_selector #(
     end
 
 
-    // ============================================================
     // Status
-    // ============================================================
 
     assign o_busy = active_r;
 

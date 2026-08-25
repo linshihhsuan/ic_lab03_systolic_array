@@ -10,6 +10,7 @@ module pe_unit #(
     input logic i_rst_n,
 
     // Global control
+    // i_step_en 由 input_skew 傳入
     input logic i_step_en,
     input logic i_acc_clear,
 
