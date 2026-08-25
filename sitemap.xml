@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+    <url>
+         <loc>https://&lt;your-username&gt;.github.io/&lt;repository-name&gt;/</loc>
+         <lastmod>2026-08-25</lastmod>
+    </url>
+    <url>
+         <loc>https://&lt;your-username&gt;.github.io/&lt;repository-name&gt;/README_zh/</loc>
+         <lastmod>2026-08-25</lastmod>
+    </url>
+    <url>
+         <loc>https://&lt;your-username&gt;.github.io/&lt;repository-name&gt;/register_map/</loc>
+         <lastmod>2026-08-25</lastmod>
+    </url>
+    <url>
+         <loc>https://&lt;your-username&gt;.github.io/&lt;repository-name&gt;/report/</loc>
+         <lastmod>2026-08-25</lastmod>
+    </url>
+    <url>
+         <loc>https://&lt;your-username&gt;.github.io/&lt;repository-name&gt;/spec/</loc>
+         <lastmod>2026-08-25</lastmod>
+    </url>
+    <url>
+         <loc>https://&lt;your-username&gt;.github.io/&lt;repository-name&gt;/verible_usage/</loc>
+         <lastmod>2026-08-25</lastmod>
+    </url>
+</urlset>
